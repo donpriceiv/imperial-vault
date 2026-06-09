@@ -1,0 +1,6 @@
+{
+  "name": "Prize Spinner and Admin Board",
+  "description": "An interactive prize wheel game featuring customizable coins and branded alcohol bottle rewards with a full administrator inventory dashboard and win logs.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

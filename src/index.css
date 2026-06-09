@@ -1,0 +1,39 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  
+  --color-gold-50: #fefdf0;
+  --color-gold-100: #fef9cf;
+  --color-gold-200: #fdf091;
+  --color-gold-300: #fbdf4a;
+  --color-gold-400: #facf1b;
+  --color-gold-500: #e5b206;
+  --color-gold-600: #c28b03;
+  --color-gold-700: #9b6505;
+  --color-gold-800: #7e500b;
+  --color-gold-900: #68410e;
+}
+
+/* Custom visual glow effects for epic rewards */
+.gold-glow {
+  box-shadow: 0 0 20px rgba(229, 178, 6, 0.25);
+}
+.epic-glow {
+  box-shadow: 0 0 25px rgba(168, 85, 247, 0.35);
+}
+.legendary-glow {
+  box-shadow: 0 0 30px rgba(239, 68, 68, 0.45);
+}
+
+/* Hide scrollbars for slick layouts */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+

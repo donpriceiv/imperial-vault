@@ -9,7 +9,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pi
 import { 
   Sliders, Plus, Trash2, CheckCircle, RefreshCw, BarChart2, FileText, 
   Settings, Award, Sparkles, TrendingUp, Key, Coins, Wine, AlertCircle, ShoppingBag,
-  Lock, Share2, Terminal
+  Lock
 } from 'lucide-react';
 import { synther } from '../utils/audio';
 import { generateClaimCode } from '../utils/prizeDb';
@@ -33,7 +33,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   adminPasscode,
   onUpdateAdminPasscode
 }) => {
-  const [activeTab, setActiveTab] = useState<'inventory' | 'claims' | 'analytics' | 'simulation' | 'security' | 'embed'>('inventory');
+  const [activeTab, setActiveTab] = useState<'inventory' | 'claims' | 'analytics' | 'simulation' | 'security'>('inventory');
   
   // States for adding/editing a prize
   const [isEditing, setIsEditing] = useState<string | null>(null);
@@ -418,17 +418,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         >
           <Lock className="w-4 h-4 text-rose-500" />
           Security Access PIN
-        </button>
-        <button 
-          onClick={() => { synther.playClick(); setActiveTab('embed'); }}
-          className={`px-4 py-3.5 font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 transition-colors border-b-2 shrink-0 ${
-            activeTab === 'embed' 
-              ? 'text-amber-400 border-amber-500 bg-slate-900/50' 
-              : 'text-slate-400 border-transparent hover:text-slate-200'
-          }`}
-        >
-          <Share2 className="w-4 h-4 text-sky-400 font-extrabold" />
-          onclav Embed Guide
         </button>
       </div>
 
@@ -1121,138 +1110,6 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 💾 Persist New Passcode
               </button>
             </form>
-          </div>
-        )}
-
-        {/* TAB 6: ONCLAV EMBED GUIDE */}
-        {activeTab === 'embed' && (
-          <div className="space-y-6 max-w-4xl mx-auto animate-fade-in text-slate-200">
-            {/* Header capsule */}
-            <div className="bg-slate-900/80 border border-slate-800 p-6 rounded-2xl flex items-start gap-4">
-              <div className="p-3 bg-sky-500/10 text-sky-400 border border-sky-500/20 rounded-xl shrink-0">
-                <Share2 className="w-6 h-6" />
-              </div>
-              <div className="space-y-1">
-                <h3 className="text-base font-extrabold text-slate-100 uppercase tracking-wider">
-                  🤝 onclav IFrame Embedding & State Synchronization
-                </h3>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Easily load the Prize Spinner in your core platform frame. When running in embedded mode, headers, footers, and redundant scrollbar spacing are hidden automatically. Under, you find the complete integration API.
-                </p>
-              </div>
-            </div>
-
-            {/* Quick iframe launch box */}
-            <div className="bg-slate-950/40 border border-slate-900 rounded-xl p-5 space-y-3">
-              <h4 className="text-xs font-black text-slate-300 uppercase tracking-widest flex items-center gap-1.5 font-mono">
-                <Terminal className="w-4 h-4 text-emerald-400" /> Web View Embedding Code
-              </h4>
-              <p className="text-[11px] text-slate-400">
-                Supply the <code className="text-amber-400 font-mono">?embed=true</code> or <code className="text-amber-400 font-mono">?embed=onclav</code> URL query parameters to turn on the clean, distraction-free widget theme:
-              </p>
-              <div className="bg-slate-950 p-3.5 rounded-lg border border-slate-800 font-mono text-[11.5px] text-amber-300 overflow-x-auto select-all leading-relaxed">
-                {`<!-- Embed this game directly in your parent onclav HTML / React app -->\n<iframe \n  src="${window.location.origin}?embed=onclav" \n  width="100%" \n  height="720px" \n  style="border: none; background: transparent;" \n  allow="clipboard-write"\n></iframe>`}
-              </div>
-            </div>
-
-            {/* Event emitters summary table */}
-            <div className="bg-slate-950/40 border border-slate-900 rounded-xl p-5 space-y-4">
-              <h4 className="text-xs font-black text-slate-300 uppercase tracking-widest font-mono">
-                📤 Dispatched Parent Events
-              </h4>
-              <p className="text-[11px] text-slate-400">
-                The game issues window events to the surrounding app via <code className="text-slate-200">window.parent.postMessage</code> so you can synchronize backend balances or process physical prizes:
-              </p>
-
-              <div className="space-y-3 pt-1">
-                {/* Event 1 */}
-                <div className="bg-slate-905/60 p-3.5 border border-slate-850 rounded-lg space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <span className="font-mono text-xs font-bold text-sky-400">ONCLAV_SPIN_START</span>
-                    <span className="text-[9px] font-mono uppercase bg-sky-955 text-sky-300 px-1.5 rounded border border-sky-900">Triggered on Draw</span>
-                  </div>
-                  <p className="text-[10px] text-slate-400">
-                    Dispatched immediately when the drawing sequence starts. 20 virtual gold coins are consumed.
-                  </p>
-                  <pre className="text-[10px] bg-slate-950 p-2 rounded text-slate-450 overflow-x-auto leading-tight font-mono">
-                    {`{ type: "ONCLAV_SPIN_START", cost: 20, nextBalance: 80 }`}
-                  </pre>
-                </div>
-
-                {/* Event 2 */}
-                <div className="bg-slate-905/60 p-3.5 border border-slate-850 rounded-lg space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <span className="font-mono text-xs font-bold text-sky-400">ONCLAV_PRIZE_WON</span>
-                    <span className="text-[9px] font-mono uppercase bg-emerald-955 text-emerald-300 px-1.5 rounded border border-emerald-900">Outcome Resolved</span>
-                  </div>
-                  <p className="text-[10px] text-slate-400">
-                    Fired as the wheel completes rotating, returning the full details of won treasures with generated claim voucher codes.
-                  </p>
-                  <pre className="text-[10px] bg-slate-950 p-2 rounded text-slate-450 overflow-x-auto leading-tight font-mono">
-{`{ 
-  type: "ONCLAV_PRIZE_WON", 
-  prize: { name: "Blue Label Whisky", type: "alcohol", rarity: "legendary", value: 0 }, 
-  nextBalance: 80, 
-  claimCode: "IMPERIAL-9A2X7B-VAULT" 
-}`}
-                  </pre>
-                </div>
-
-                {/* Event 3 */}
-                <div className="bg-slate-905/60 p-3.5 border border-slate-850 rounded-lg space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <span className="font-mono text-xs font-bold text-sky-400">ONCLAV_COINS_CLAIMED</span>
-                    <span className="text-[9px] font-mono uppercase bg-yellow-955 text-yellow-300 px-1.5 rounded border border-yellow-900">Balance replenished</span>
-                  </div>
-                  <p className="text-[10px] text-slate-400">
-                    Dispatched when a player clicks to refill coin balances under emergency testing scenarios if they run dry.
-                  </p>
-                  <pre className="text-[10px] bg-slate-950 p-2 rounded text-slate-450 overflow-x-auto leading-tight font-mono">
-                    {`{ type: "ONCLAV_COINS_CLAIMED", addedAmount: 100, nextBalance: 180 }`}
-                  </pre>
-                </div>
-              </div>
-            </div>
-
-            {/* Inbound Message Controllers */}
-            <div className="bg-slate-950/40 border border-slate-900 rounded-xl p-5 space-y-4">
-              <h4 className="text-xs font-black text-slate-300 uppercase tracking-widest font-mono">
-                📥 Controlling Player Balances Remotely
-              </h4>
-              <p className="text-[11px] text-slate-400">
-                You can push events into the embedded game iframe to update the player coins balance dynamically. Execute the following in your parent console to test live:
-              </p>
-
-              <div className="space-y-3 pt-1">
-                {/* Command 1 */}
-                <div className="bg-slate-905/60 p-3.5 border border-slate-850 rounded-lg space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <span className="font-mono text-xs font-bold text-amber-400">ONCLAV_SET_COINS</span>
-                    <span className="text-[9px] font-mono text-slate-500 select-none">Send to iframe</span>
-                  </div>
-                  <p className="text-[10px] text-slate-400">
-                    Sets the player's gold stash to any custom value (ideal to mirror user account balances in the onclav app).
-                  </p>
-                  <pre className="text-[10.5px] bg-slate-950 p-2 rounded text-amber-200 overflow-x-auto leading-tight font-mono">
-                    {`// Target the iframe content window\nmyIFrame.contentWindow.postMessage({ type: "ONCLAV_SET_COINS", payload: 750 }, "*");`}
-                  </pre>
-                </div>
-
-                {/* Command 2 */}
-                <div className="bg-slate-905/60 p-3.5 border border-slate-850 rounded-lg space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <span className="font-mono text-xs font-bold text-amber-400">ONCLAV_ADD_COINS</span>
-                    <span className="text-[9px] font-mono text-slate-500 select-none">Send to iframe</span>
-                  </div>
-                  <p className="text-[10px] text-slate-400">
-                    Increments or decrements user coins from the container.
-                  </p>
-                  <pre className="text-[10.5px] bg-slate-950 p-2 rounded text-amber-200 overflow-x-auto leading-tight font-mono">
-                    {`// Add 50 coins or pass negative values to subtract them\nmyIFrame.contentWindow.postMessage({ type: "ONCLAV_ADD_COINS", payload: 50 }, "*");`}
-                  </pre>
-                </div>
-              </div>
-            </div>
           </div>
         )}
       </div>

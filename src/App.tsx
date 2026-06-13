@@ -26,7 +26,17 @@ export default function App() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminPass, setAdminPass] = useState('');
   const [showPassModal, setShowPassModal] = useState(false);
+  const [adminLoginError, setAdminLoginError] = useState<string | null>(null);
   const [claimedCopy, setClaimedCopy] = useState<string | null>(null);
+
+  const [isEmbedded, setIsEmbedded] = useState(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('embed') === 'onclav' || params.get('embed') === 'true' || window.self !== window.top;
+    } catch {
+      return false;
+    }
+  });
 
   const [adminPasscode, setAdminPasscode] = useState<string>(() => {
     return localStorage.getItem('prize_spinner_admin_code') || '1234';
@@ -44,6 +54,36 @@ export default function App() {
 
   const [lastClaimTime, setLastClaimTime] = useState<number>(0);
   const [currentTime, setCurrentTime] = useState(Date.now());
+
+  // Listen to external payload updates from onclav or parent frames
+  useEffect(() => {
+    const handleOnclavCommands = (event: MessageEvent) => {
+      if (!event.data || typeof event.data !== 'object') return;
+      
+      const { type, payload } = event.data;
+      if (type === 'ONCLAV_SET_COINS') {
+        const amt = Number(payload);
+        if (!isNaN(amt)) {
+          setUserCoins(amt);
+          saveCoinBalance(amt);
+          synther.playCoinsWin();
+        }
+      } else if (type === 'ONCLAV_ADD_COINS') {
+        const amt = Number(payload);
+        if (!isNaN(amt)) {
+          setUserCoins(prev => {
+            const next = Math.max(0, prev + amt);
+            saveCoinBalance(next);
+            synther.playCoinsWin();
+            return next;
+          });
+        }
+      }
+    };
+
+    window.addEventListener('message', handleOnclavCommands);
+    return () => window.removeEventListener('message', handleOnclavCommands);
+  }, []);
 
   // Load initial persistent storage
   useEffect(() => {
@@ -103,6 +143,19 @@ export default function App() {
     const nextBalance = userCoins - 20;
     setUserCoins(nextBalance);
     saveCoinBalance(nextBalance);
+
+    if (isEmbedded) {
+      try {
+        window.parent.postMessage({
+          type: 'ONCLAV_SPIN_START',
+          cost: 20,
+          nextBalance: nextBalance,
+          timestamp: Date.now()
+        }, '*');
+      } catch (e) {
+        console.warn('Failed to dispatch ONCLAV_SPIN_START to parent frame:', e);
+      }
+    }
   };
 
   // Resolve outcome of the spin
@@ -154,12 +207,26 @@ export default function App() {
     const nextLogs = [newLog, ...winLogs];
     setWinLogs(nextLogs);
     saveWinLogs(nextLogs);
+
+    if (isEmbedded) {
+      try {
+        window.parent.postMessage({
+          type: 'ONCLAV_PRIZE_WON',
+          prize: wonPrize,
+          nextBalance: updatedBalance,
+          claimCode,
+          log: newLog,
+          timestamp: Date.now()
+        }, '*');
+      } catch (e) {
+        console.warn('Failed to dispatch ONCLAV_PRIZE_WON to parent frame:', e);
+      }
+    }
   };
 
   // Cheat code or free coin claim to prevent dry blocks
   const handleClaimFreeCoins = () => {
     if (isCooldownActive) {
-      alert(`⏱️ Cooldown active! You can claim again in ${getRemainingTimeStr()}.`);
       return;
     }
     synther.playCoinsWin();
@@ -171,6 +238,19 @@ export default function App() {
     setLastClaimTime(now);
     setCurrentTime(now);
     localStorage.setItem('prize_spinner_last_claim_time', String(now));
+
+    if (isEmbedded) {
+      try {
+        window.parent.postMessage({
+          type: 'ONCLAV_COINS_CLAIMED',
+          addedAmount: 100,
+          nextBalance,
+          timestamp: Date.now()
+        }, '*');
+      } catch (e) {
+        console.warn('Failed to dispatch ONCLAV_COINS_CLAIMED to parent frame:', e);
+      }
+    }
   };
 
   // Clipboard copy helper for claim codes
@@ -179,6 +259,18 @@ export default function App() {
     setClaimedCopy(text);
     synther.playTick();
     setTimeout(() => setClaimedCopy(null), 1800);
+
+    if (isEmbedded) {
+      try {
+        window.parent.postMessage({
+          type: 'ONCLAV_CLAIM_CODE_COPIED',
+          code: text,
+          timestamp: Date.now()
+        }, '*');
+      } catch (e) {
+        console.warn('Failed to dispatch ONCLAV_CLAIM_CODE_COPIED to parent frame:', e);
+      }
+    }
   };
 
   const attemptAdminLogin = (e: React.FormEvent) => {
@@ -188,8 +280,12 @@ export default function App() {
       setIsAdmin(true);
       setShowPassModal(false);
       setAdminPass('');
+      setAdminLoginError(null);
     } else {
-      alert('🔒 Access Denied: Incorrect passcode.');
+      setAdminLoginError('🔒 Access Denied: Incorrect passcode.');
+      setTimeout(() => {
+        setAdminLoginError(null);
+      }, 4000);
     }
   };
 
@@ -211,69 +307,71 @@ export default function App() {
       <span className="absolute bottom-[-150px] right-[10%] w-[400px] h-[400px] bg-purple-500/5 blur-[160px] rounded-full pointer-events-none z-0" />
 
       {/* Primary Top Header bar */}
-      <header className="border-b border-slate-900 bg-slate-950/80 backdrop-blur-md sticky top-0 z-40 px-4 py-3.5">
-        <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
-          
-          {/* Logo Brand Brand */}
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-500 to-yellow-400 p-0.5 flex items-center justify-center shadow-lg shadow-amber-500/10">
-              <div className="w-full h-full bg-[#070b13] rounded-[10px] flex items-center justify-center">
-                <Wine className="w-4 h-4 text-amber-400" />
-              </div>
-            </div>
-            <div>
-              <h1 className="text-base font-extrabold tracking-tight bg-gradient-to-r from-slate-100 to-slate-300 bg-clip-text text-transparent flex items-center gap-1.5 leading-none">
-                Imperial Vaults <span className="text-xs text-amber-500 font-black tracking-normal">SPIN</span>
-              </h1>
-              <p className="text-[10px] text-slate-400 leading-none mt-1">
-                Aged Spirits & Gold Coins drawing console
-              </p>
-            </div>
-          </div>
-
-          {/* Balance Tracker & System Toggle */}
-          <div className="flex items-center gap-3">
+      {!isEmbedded && (
+        <header className="border-b border-slate-900 bg-slate-950/80 backdrop-blur-md sticky top-0 z-40 px-4 py-3.5">
+          <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
             
-            {/* Player coin stash widget */}
-            <div className="bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 flex items-center gap-2 shadow-inner">
-              <span className="flex items-center justify-center p-1 bg-amber-500/20 text-amber-400 rounded-full animate-bounce-slow">
-                <Coins className="w-3.5 h-3.5" />
-              </span>
-              <div className="flex flex-col">
-                <span className="text-[10px] text-slate-400 leading-none">Your Gold</span>
-                <span className="font-mono text-sm font-bold text-yellow-400 leading-none mt-0.5">
-                  {userCoins}
-                </span>
+            {/* Logo Brand Brand */}
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-500 to-yellow-400 p-0.5 flex items-center justify-center shadow-lg shadow-amber-500/10">
+                <div className="w-full h-full bg-[#070b13] rounded-[10px] flex items-center justify-center">
+                  <Wine className="w-4 h-4 text-amber-400" />
+                </div>
+              </div>
+              <div>
+                <h1 className="text-base font-extrabold tracking-tight bg-gradient-to-r from-slate-100 to-slate-300 bg-clip-text text-transparent flex items-center gap-1.5 leading-none">
+                  Imperial Vault <span className="text-xs text-amber-500 font-black tracking-normal">SPIN</span>
+                </h1>
+                <p className="text-[10px] text-slate-400 leading-none mt-1">
+                  Spin the Wheel to win exclusive Prizes and Gold Coins
+                </p>
               </div>
             </div>
 
-            {/* Admin Switch lock toggler */}
-            {isAdmin ? (
-              <button
-                onClick={() => { synther.playClick(); setIsAdmin(false); }}
-                className="bg-slate-900 hover:bg-slate-800 text-rose-400 border border-slate-850 px-3 py-2 rounded-lg font-bold text-xs uppercase flex items-center gap-1.5 tracking-wider transition-all cursor-pointer"
-              >
-                <LogOut className="w-4 h-4" />
-                Player Mode
-              </button>
-            ) : (
-              <button
-                onClick={() => { synther.playClick(); setShowPassModal(true); }}
-                className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold px-3 py-2 rounded-lg text-xs uppercase flex items-center gap-1.5 tracking-wider transition-all shadow-lg shadow-amber-500/10 cursor-pointer"
-              >
-                <Settings className="w-4 h-4 animate-spin-slow" />
-                Administrator Gate
-              </button>
-            )}
+            {/* Balance Tracker & System Toggle */}
+            <div className="flex items-center gap-3">
+              
+              {/* Player coin stash widget */}
+              <div className="bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 flex items-center gap-2 shadow-inner">
+                <span className="flex items-center justify-center p-1 bg-amber-500/20 text-amber-400 rounded-full animate-bounce-slow">
+                  <Coins className="w-3.5 h-3.5" />
+                </span>
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-slate-400 leading-none">Your Gold</span>
+                  <span className="font-mono text-sm font-bold text-yellow-400 leading-none mt-0.5">
+                    {userCoins}
+                  </span>
+                </div>
+              </div>
+
+              {/* Admin Switch lock toggler */}
+              {isAdmin ? (
+                <button
+                  onClick={() => { synther.playClick(); setIsAdmin(false); }}
+                  className="bg-slate-900 hover:bg-slate-800 text-rose-400 border border-slate-850 px-3 py-2 rounded-lg font-bold text-xs uppercase flex items-center gap-1.5 tracking-wider transition-all cursor-pointer"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Player Mode
+                </button>
+              ) : (
+                <button
+                  onClick={() => { synther.playClick(); setShowPassModal(true); }}
+                  className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold px-3 py-2 rounded-lg text-xs uppercase flex items-center gap-1.5 tracking-wider transition-all shadow-lg shadow-amber-500/10 cursor-pointer"
+                >
+                  <Settings className="w-4 h-4 animate-spin-slow" />
+                  Administrator Gate
+                </button>
+              )}
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
+      )}
 
       {/* Main Content Stage */}
       <main className="flex-1 max-w-6xl mx-auto w-full p-4 md:p-6 z-10 grid grid-cols-1 gap-6">
 
         {/* Informative Tip Baner when in App */}
-        {!isAdmin && (
+        {!isAdmin && !isEmbedded && (
           <div className="bg-slate-950/40 border border-slate-850 rounded-2xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div className="flex items-start gap-3">
               <Info className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
@@ -282,7 +380,7 @@ export default function App() {
                   Welcome to the Branded Reward Draw Center!
                 </h4>
                 <p className="text-[11px] text-slate-400">
-                  Each machine spin costs <span className="text-yellow-400 font-bold">20 coins</span>. High-tier branded alcohol bottles can be collected below along with unique <span className="font-bold">Claim Vouchers</span>. Open the Administrator Gate to adjust prize lines, view statistics, and review stock configuration.
+                  Each machine spin costs <span className="text-yellow-400 font-bold">20 coins</span>. High-tier branded alcohol bottles can be collected below along with unique <span className="font-bold">Claim Vouchers</span>.
                 </p>
               </div>
             </div>
@@ -333,6 +431,52 @@ export default function App() {
                 <span className="absolute top-2 left-2 px-3 py-1 bg-slate-900 border border-slate-800 text-[10px] font-mono rounded-full text-slate-400 uppercase">
                   ⭐ Precision Wheel v4
                 </span>
+
+                {isEmbedded && (
+                  <div className="w-full flex items-center justify-between gap-3 mt-8 mb-4 bg-slate-900/60 border border-slate-800/80 rounded-2xl p-3 z-10 animate-fade-in">
+                    {/* Compact logo / identifier */}
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Wine className="w-4 h-4 text-amber-500 shrink-0" />
+                      <div>
+                        <span className="text-[10px] font-black tracking-widest uppercase text-slate-200 block leading-none">ONCLAV</span>
+                        <span className="text-[9px] text-slate-500 block leading-none mt-0.5">Dual Integration Channel</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {/* Short free coins claim if balance runs dry */}
+                      <button
+                        onClick={handleClaimFreeCoins}
+                        disabled={isCooldownActive}
+                        className={`text-[9.5px] font-black uppercase px-2.5 py-1 rounded-lg border transition-all ${
+                          isCooldownActive
+                            ? 'bg-slate-800/40 text-slate-500 border-slate-700/40 cursor-not-allowed'
+                            : 'bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-500 border-yellow-500/20 cursor-pointer'
+                        }`}
+                        title={isCooldownActive ? `Claim Locked (${getRemainingTimeStr()})` : "Inject Free Coins"}
+                      >
+                        {isCooldownActive ? 'Cooldowned' : '+100 Gold'}
+                      </button>
+
+                      {/* Currency container */}
+                      <div className="flex items-center gap-1.5 bg-slate-950 border border-slate-850 px-2.5 py-1 rounded-lg shadow-inner">
+                        <Coins className="w-3.5 h-3.5 text-amber-400 animate-pulse animate-duration-[2400ms]" />
+                        <span className="font-mono text-xs font-bold text-yellow-400 leading-none">
+                          {userCoins}
+                        </span>
+                      </div>
+
+                      {/* Small inline lock trigger to verify host passcode */}
+                      <button
+                        onClick={() => { synther.playClick(); setShowPassModal(true); }}
+                        className="p-1.5 rounded-lg bg-slate-950 hover:bg-slate-900 border border-slate-850 hover:border-slate-700 text-slate-500 hover:text-slate-350 cursor-pointer transition-colors"
+                        title="Administrator Settings Logboard"
+                      >
+                        <Lock className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 <PrizeWheel 
                   prizes={prizes}
@@ -453,16 +597,18 @@ export default function App() {
       </main>
 
       {/* FOOTER CODES */}
-      <footer className="mt-12 border-t border-slate-900 bg-slate-950/40 p-6 text-center text-xs text-slate-500">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 font-mono">
-          <span>© 2026 Imperial Prize Drawing Platform. All rights reserved.</span>
-          <div className="flex items-center gap-4">
-            <span>Powered by Web Audio + HTML5 Canvas</span>
-            <span>•</span>
-            <span className="text-slate-400">Offline-Persistent Sandbox State</span>
+      {!isEmbedded && (
+        <footer className="mt-12 border-t border-slate-900 bg-slate-950/40 p-6 text-center text-xs text-slate-500">
+          <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 font-mono">
+            <span>© 2026 Imperial Prize Drawing Platform. All rights reserved.</span>
+            <div className="flex items-center gap-4">
+              <span>Powered by Web Audio + HTML5 Canvas</span>
+              <span>•</span>
+              <span className="text-slate-400">Offline-Persistent Sandbox State</span>
+            </div>
           </div>
-        </div>
-      </footer>
+        </footer>
+      )}
 
       {/* CELEBRATORY WIN WIN DIALOG MODAL */}
       {currentWin && (
@@ -563,14 +709,28 @@ export default function App() {
                 placeholder="••••"
                 maxLength={8}
                 value={adminPass}
-                onChange={e => setAdminPass(e.target.value)}
+                onChange={e => {
+                  setAdminPass(e.target.value);
+                  if (adminLoginError) setAdminLoginError(null);
+                }}
                 autoFocus
               />
+              
+              {adminLoginError && (
+                <div className="text-center text-[11px] font-bold text-rose-400 bg-rose-950/20 border border-rose-900/40 py-1.5 px-3 rounded-lg animate-pulse">
+                  {adminLoginError}
+                </div>
+              )}
               
               <div className="flex gap-2">
                 <button
                   type="button"
-                  onClick={() => { synther.playClick(); setShowPassModal(false); }}
+                  onClick={() => { 
+                    synther.playClick(); 
+                    setShowPassModal(false); 
+                    setAdminPass(''); 
+                    setAdminLoginError(null); 
+                  }}
                   className="flex-1 bg-slate-950 hover:bg-slate-900 text-slate-400 text-xs font-bold py-2 rounded-lg text-center cursor-pointer transition-colors"
                 >
                   Go Back

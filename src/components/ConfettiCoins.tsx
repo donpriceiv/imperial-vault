@@ -29,12 +29,26 @@ export const ConfettiCoins: React.FC<ConfettiCoinsProps> = ({ active, type, onCo
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const particlesRef = useRef<Particle[]>([]);
   const animationRef = useRef<number | null>(null);
+  
+  // Use a ref for the onComplete callback to avoid triggering effect runs when parent re-renders
+  const onCompleteRef = useRef(onComplete);
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
 
   useEffect(() => {
     if (!active || type === 'none') {
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
         animationRef.current = null;
+      }
+      // Clean up and clear the canvas
+      const canvas = canvasRef.current;
+      if (canvas) {
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
       }
       return;
     }
@@ -54,20 +68,17 @@ export const ConfettiCoins: React.FC<ConfettiCoinsProps> = ({ active, type, onCo
 
     // Seed particles
     const particles: Particle[] = [];
-    const count = type === 'coins' ? 120 : 180;
     const colors = type === 'coins' 
       ? ['#FBBF24', '#F59E0B', '#D97706', '#FFF3B0', '#FCD34D'] // Shiny golds
       : ['#A78BFA', '#818CF8', '#34D399', '#60A5FA', '#F472B6', '#F43F5E']; // Neon branding hues
 
-    for (let i = 0; i < count; i++) {
-      // Spawn at the center bottom of wheel, or center screen
+    const spawnParticle = () => {
       const spawnX = canvas.width / 2;
       const spawnY = canvas.height * 0.45;
-
       const angle = (Math.random() * Math.PI * 2);
       const speed = 4 + Math.random() * 12;
 
-      particles.push({
+      return {
         x: spawnX,
         y: spawnY,
         vx: Math.cos(angle) * speed,
@@ -79,17 +90,35 @@ export const ConfettiCoins: React.FC<ConfettiCoinsProps> = ({ active, type, onCo
         bounceCount: 0,
         opacity: 1,
         type: type === 'coins' ? 'coin' : 'shimmer'
-      });
+      } as Particle;
+    };
+
+    // Seed immediate initial burst
+    const initialCount = type === 'coins' ? 30 : 45;
+    for (let i = 0; i < initialCount; i++) {
+      particles.push(spawnParticle());
     }
 
     particlesRef.current = particles;
     const gravity = 0.25;
     const friction = 0.98;
     const floor = canvas.height;
-    let frameCount = 0;
+    
+    const startTime = performance.now();
 
     const render = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const now = performance.now();
+      const elapsed = now - startTime;
+
+      // Continuously spawn coins during the payout window of 2 seconds
+      if (elapsed < 2000) {
+        const spawnRate = type === 'coins' ? 2 : 3;
+        for (let i = 0; i < spawnRate; i++) {
+          particlesRef.current.push(spawnParticle());
+        }
+      }
+
       const currentParticles = particlesRef.current;
 
       currentParticles.forEach((p, idx) => {
@@ -108,8 +137,8 @@ export const ConfettiCoins: React.FC<ConfettiCoinsProps> = ({ active, type, onCo
           p.bounceCount++;
         }
 
-        // Fade out
-        if (p.bounceCount > 1 || frameCount > 100) {
+        // Fade out when bounced or after payout over
+        if (p.bounceCount > 1 || elapsed > 2000) {
           p.opacity -= 0.015;
         }
 
@@ -163,12 +192,12 @@ export const ConfettiCoins: React.FC<ConfettiCoinsProps> = ({ active, type, onCo
 
       // Filter out dead particles
       particlesRef.current = currentParticles.filter(p => p.opacity > 0);
-      frameCount++;
 
-      if (particlesRef.current.length > 0 && frameCount < 220) {
+      // Finish cleanly after 2.8s max duration OR if empty after 2.0s
+      if (particlesRef.current.length > 0 && elapsed < 2800) {
         animationRef.current = requestAnimationFrame(render);
       } else {
-        if (onComplete) onComplete();
+        if (onCompleteRef.current) onCompleteRef.current();
       }
     };
 
@@ -180,7 +209,7 @@ export const ConfettiCoins: React.FC<ConfettiCoinsProps> = ({ active, type, onCo
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [active, type, onComplete]);
+  }, [active, type]);
 
   return (
     <canvas

@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Prize, WinLog } from './types';
 import { PrizeWheel } from './components/PrizeWheel';
 import { AdminPanel } from './components/AdminPanel';
@@ -166,6 +167,10 @@ export default function App() {
     const nextBalance = userCoins + 100;
     setUserCoins(nextBalance);
     saveCoinBalance(nextBalance);
+    
+    // Trigger beautiful gold coins rain animation
+    setConfettiType('coins');
+    setConfettiActive(true);
     
     const now = Date.now();
     setLastClaimTime(now);
@@ -469,79 +474,135 @@ export default function App() {
       </footer>
 
       {/* CELEBRATORY WIN WIN DIALOG MODAL */}
-      {currentWin && (
-        <div className="fixed inset-0 bg-slate-950/90 z-50 flex items-center justify-center p-4 backdrop-blur-md animate-fade-in">
-          
-          <div className="bg-[#0f172a] border border-slate-800 rounded-3xl p-6 md:p-8 max-w-sm w-full text-center relative overflow-hidden shadow-2xl space-y-6">
+      <AnimatePresence>
+        {currentWin && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-slate-950/90 z-50 flex items-center justify-center p-4 backdrop-blur-md"
+          >
             
-            {/* Ambient dynamic card halo background glow */}
-            <span className={`absolute -top-12 left-1/2 -translate-x-1/2 w-48 h-48 rounded-full blur-[60px] opacity-25 ${
-              currentWin.rarity === 'legendary' ? 'bg-red-500' :
-              currentWin.rarity === 'epic' ? 'bg-purple-500' :
-              currentWin.rarity === 'rare' ? 'bg-blue-500' : 'bg-emerald-500'
-            }`} />
-
-            {/* Glowing sparkle particle elements */}
-            <div className="relative mx-auto w-24 h-24 rounded-full bg-slate-900/80 border-4 border-amber-400/30 flex items-center justify-center shadow-lg">
-              {currentWin.type === 'coin' ? (
-                <Coins className="w-12 h-12 text-yellow-400 animate-bounce-slow" />
-              ) : (
-                <Wine className="w-12 h-12 text-purple-400 animate-pulse" />
-              )}
-              <span className="absolute inset-0 rounded-full border-2 border-dashed border-amber-400/40 animate-spin-slow" />
-            </div>
-
-            {/* Winning texts block */}
-            <div className="space-y-1.5 relative z-10">
-              <span className={`text-[10px] uppercase font-mono font-black tracking-widest px-2.5 py-0.5 rounded-full border ${
-                currentWin.rarity === 'legendary' ? 'bg-red-500/15 border-red-500/30 text-rose-400' :
-                currentWin.rarity === 'epic' ? 'bg-purple-500/15 border-purple-500/30 text-indigo-400' :
-                currentWin.rarity === 'rare' ? 'bg-blue-500/15 border-blue-500/30 text-blue-400' :
-                'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
-              }`}>
-                🎉 {currentWin.rarity} Win!
-              </span>
-              <h2 className="text-xl md:text-2xl font-black text-slate-100 tracking-tight pt-2">
-                {currentWin.name}
-              </h2>
-              <p className="text-xs text-slate-400 leading-normal px-2">
-                {currentWin.description}
-              </p>
-            </div>
-
-            {/* Meta attributes (size volume or coin amounts summary) */}
-            <div className="bg-slate-950/50 rounded-xl p-3 text-xs flex justify-around items-center border border-slate-850">
-              {currentWin.type === 'coin' ? (
-                <>
-                  <span className="text-slate-400">Total Award:</span>
-                  <span className="font-mono font-extrabold text-amber-400 text-sm">+{currentWin.value} Gold</span>
-                </>
-              ) : (
-                <>
-                  <div className="text-left">
-                    <span className="text-slate-500 text-[10px] block leading-none">ESTATE/BRAND</span>
-                    <span className="font-bold text-slate-305 mt-0.5 block">{currentWin.brand}</span>
-                  </div>
-                  <div className="w-px h-6 bg-slate-800" />
-                  <div className="text-right">
-                    <span className="text-slate-500 text-[10px] block leading-none">SIZE/VOLUME</span>
-                    <span className="font-mono font-bold text-amber-500 mt-0.5 block">{currentWin.volume}</span>
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* Accept / close button dismiss */}
-            <button
-              onClick={() => { synther.playClick(); setCurrentWin(null); }}
-              className="w-full bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-600 hover:from-amber-500 hover:to-amber-700 text-slate-950 text-xs font-black uppercase py-3 rounded-xl tracking-wider shadow-lg shadow-amber-500/20 cursor-pointer text-center relative z-10 block transition-all"
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0, y: 30 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 15 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+              className="bg-[#0f172a] border border-slate-800 rounded-3xl p-6 md:p-8 max-w-sm w-full text-center relative overflow-hidden shadow-2xl space-y-6"
             >
-              Collect Rewards & Continue
-            </button>
-          </div>
+              
+              {/* Ambient dynamic card halo background glow */}
+              <span className={`absolute -top-12 left-1/2 -translate-x-1/2 w-48 h-48 rounded-full blur-[60px] opacity-25 ${
+                currentWin.rarity === 'legendary' ? 'bg-red-500' :
+                currentWin.rarity === 'epic' ? 'bg-purple-500' :
+                currentWin.rarity === 'rare' ? 'bg-blue-500' : 'bg-emerald-500'
+              }`} />
 
-        </div>
-      )}
+              {/* Decorative falling gold coins on top of card inside bounds */}
+              {currentWin.type === 'coin' && (
+                <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-3xl z-0">
+                  {[...Array(14)].map((_, i) => {
+                    const left = Math.random() * 80 + 10;
+                    const duration = 2.0 + Math.random() * 1.5;
+                    const delay = Math.random() * 1.5;
+                    const size = 12 + Math.random() * 10;
+                    return (
+                      <motion.div
+                        key={i}
+                        initial={{ y: -30, x: `${left}%`, opacity: 0, rotate: 0 }}
+                        animate={{ 
+                          y: ['-5%', '115%'], 
+                          x: [`${left}%`, `${left + (Math.random() * 16 - 8)}%`],
+                          opacity: [0, 1, 1, 0],
+                          rotate: [0, Math.random() * 360 + 180] 
+                        }}
+                        transition={{
+                          duration,
+                          delay,
+                          repeat: Infinity,
+                          ease: "linear"
+                        }}
+                        style={{
+                          width: size,
+                          height: size,
+                          position: "absolute",
+                          top: 0
+                        }}
+                      >
+                        <Coins className="w-full h-full text-yellow-450 opacity-80 drop-shadow-[0_2px_4px_rgba(234,179,8,0.5)]" />
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Glowing sparkle particle elements */}
+              <motion.div 
+                initial={{ scale: 0, rotate: -20 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ type: "spring", stiffness: 260, damping: 15, delay: 0.1 }}
+                className="relative mx-auto w-24 h-24 rounded-full bg-slate-900/80 border-4 border-amber-400/30 flex items-center justify-center shadow-lg z-10"
+              >
+                {currentWin.type === 'coin' ? (
+                  <Coins className="w-12 h-12 text-yellow-400 animate-bounce-slow" />
+                ) : (
+                  <Wine className="w-12 h-12 text-purple-400 animate-pulse" />
+                )}
+                <span className="absolute inset-0 rounded-full border-2 border-dashed border-amber-400/40 animate-spin-slow" />
+              </motion.div>
+
+              {/* Winning texts block */}
+              <div className="space-y-1.5 relative z-10">
+                <span className={`text-[10px] uppercase font-mono font-black tracking-widest px-2.5 py-0.5 rounded-full border ${
+                  currentWin.rarity === 'legendary' ? 'bg-red-500/15 border-red-500/30 text-rose-400' :
+                  currentWin.rarity === 'epic' ? 'bg-purple-500/15 border-purple-500/30 text-indigo-400' :
+                  currentWin.rarity === 'rare' ? 'bg-blue-500/15 border-blue-500/30 text-blue-400' :
+                  'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
+                }`}>
+                  🎉 {currentWin.rarity} Win!
+                </span>
+                <h2 className="text-xl md:text-2xl font-black text-slate-100 tracking-tight pt-2">
+                  {currentWin.name}
+                </h2>
+                <p className="text-xs text-slate-400 leading-normal px-2">
+                  {currentWin.description}
+                </p>
+              </div>
+
+              {/* Meta attributes (size volume or coin amounts summary) */}
+              <div className="bg-slate-950/50 rounded-xl p-3 text-xs flex justify-around items-center border border-slate-850 relative z-10">
+                {currentWin.type === 'coin' ? (
+                  <>
+                    <span className="text-slate-400">Total Award:</span>
+                    <span className="font-mono font-extrabold text-amber-400 text-sm">+{currentWin.value} Gold</span>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-left">
+                      <span className="text-slate-500 text-[10px] block leading-none">ESTATE/BRAND</span>
+                      <span className="font-bold text-slate-305 mt-0.5 block">{currentWin.brand}</span>
+                    </div>
+                    <div className="w-px h-6 bg-slate-800" />
+                    <div className="text-right">
+                      <span className="text-slate-500 text-[10px] block leading-none">SIZE/VOLUME</span>
+                      <span className="font-mono font-bold text-amber-500 mt-0.5 block">{currentWin.volume}</span>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Accept / close button dismiss */}
+              <button
+                onClick={() => { synther.playClick(); setCurrentWin(null); }}
+                className="w-full bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-600 hover:from-amber-500 hover:to-amber-700 text-slate-950 text-xs font-black uppercase py-3 rounded-xl tracking-wider shadow-lg shadow-amber-500/20 cursor-pointer text-center relative z-10 block transition-all animate-pulse duration-[2000ms]"
+              >
+                Collect Rewards & Continue
+              </button>
+            </motion.div>
+
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* PASSCODE ENTRY GATE MODAL WINDOW */}
       {showPassModal && (

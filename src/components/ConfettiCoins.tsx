@@ -58,10 +58,10 @@ export const ConfettiCoins: React.FC<ConfettiCoinsProps> = ({ active, type, onCo
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Set canvas dimensions
+    // Set canvas dimensions to viewport
     const resizeCanvas = () => {
-      canvas.width = canvas.parentElement?.clientWidth || window.innerWidth;
-      canvas.height = canvas.parentElement?.clientHeight || window.innerHeight;
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
     };
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
@@ -83,10 +83,10 @@ export const ConfettiCoins: React.FC<ConfettiCoinsProps> = ({ active, type, onCo
         y: spawnY,
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed - (3 + Math.random() * 6), // bias upward blast
-        size: type === 'coins' ? 8 + Math.random() * 10 : 3 + Math.random() * 6,
+        size: type === 'coins' ? 10 + Math.random() * 12 : 3 + Math.random() * 6,
         color: colors[Math.floor(Math.random() * colors.length)],
         rotation: Math.random() * Math.PI * 2,
-        rotationSpeed: (Math.random() - 0.5) * 0.3,
+        rotationSpeed: (Math.random() - 0.5) * 0.4,
         bounceCount: 0,
         opacity: 1,
         type: type === 'coins' ? 'coin' : 'shimmer'
@@ -94,7 +94,7 @@ export const ConfettiCoins: React.FC<ConfettiCoinsProps> = ({ active, type, onCo
     };
 
     // Seed immediate initial burst
-    const initialCount = type === 'coins' ? 30 : 45;
+    const initialCount = type === 'coins' ? 70 : 60;
     for (let i = 0; i < initialCount; i++) {
       particles.push(spawnParticle());
     }
@@ -215,7 +215,7 @@ export const ConfettiCoins: React.FC<ConfettiCoinsProps> = ({ active, type, onCo
     <canvas
       ref={canvasRef}
       id="confetti-canvas"
-      className="absolute top-0 left-0 w-full h-full pointer-events-none z-50"
+      className="fixed inset-0 w-[100vw] h-[100vh] pointer-events-none z-[100]"
     />
   );
 };

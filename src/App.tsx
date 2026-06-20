@@ -102,7 +102,7 @@ export default function App() {
   const handleSpinStart = () => {
     setIsSpinning(true);
     // Deduct entry fee
-    const nextBalance = userCoins - 20;
+    const nextBalance = userCoins - 50;
     setUserCoins(nextBalance);
     saveCoinBalance(nextBalance);
   };
@@ -291,7 +291,7 @@ export default function App() {
                   Welcome to the Branded Reward Draw Center!
                 </h4>
                 <p className="text-[11px] text-slate-400">
-                  Each machine spin costs <span className="text-yellow-400 font-bold">20 coins</span>. High-tier branded alcohol bottles can be collected below along with unique <span className="font-bold">Claim Vouchers</span>.
+                  Each machine spin costs <span className="text-yellow-400 font-bold">50 coins</span>. High-tier branded alcohol bottles can be collected below along with unique <span className="font-bold">Claim Vouchers</span>.
                 </p>
               </div>
             </div>

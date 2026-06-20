@@ -12,7 +12,7 @@ import {
   Lock
 } from 'lucide-react';
 import { synther } from '../utils/audio';
-import { generateClaimCode } from '../utils/prizeDb';
+import { generateClaimCode, selectPrizeSpin } from '../utils/prizeDb';
 
 interface AdminPanelProps {
   prizes: Prize[];
@@ -247,25 +247,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       return;
     }
 
-    const totalWeight = available.reduce((sum, p) => sum + p.probability, 0);
-    
     // Initialize results count map
     const countsMap: Record<string, number> = {};
     prizes.forEach(p => { countsMap[p.id] = 0; });
 
     for (let i = 0; i < 100; i++) {
-      const randomPoint = Math.random() * totalWeight;
-      let runningSum = 0;
-      let winner = available[available.length - 1];
-
-      for (const p of available) {
-        runningSum += p.probability;
-        if (randomPoint <= runningSum) {
-          winner = p;
-          break;
-        }
+      const winner = selectPrizeSpin(prizes);
+      if (winner) {
+        countsMap[winner.id] = (countsMap[winner.id] || 0) + 1;
       }
-      countsMap[winner.id] = (countsMap[winner.id] || 0) + 1;
     }
 
     const compiled = prizes.map(p => ({

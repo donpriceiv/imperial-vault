@@ -6,6 +6,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { Prize } from '../types';
 import { synther } from '../utils/audio';
+import { selectPrizeSpin } from '../utils/prizeDb';
 
 interface PrizeWheelProps {
   prizes: Prize[];
@@ -205,14 +206,14 @@ export const PrizeWheel: React.FC<PrizeWheelProps> = ({
     ctx.fillText('WIN', centerX, centerY - 4);
     ctx.font = '800 9px "JetBrains Mono"';
     ctx.fillStyle = '#E2E8F0';
-    ctx.fillText('20 💰', centerX, centerY + 10);
+    ctx.fillText('50 💰', centerX, centerY + 10);
   };
 
   const triggerSpin = () => {
     if (isAnimatingRef.current) return;
     setErrorMsg('');
 
-    if (userCoins < 20) {
+    if (userCoins < 50) {
       setErrorMsg('Not enough gold coins! Tap "Claim Free Coins" below.');
       synther.playClick();
       return;
@@ -223,24 +224,10 @@ export const PrizeWheel: React.FC<PrizeWheelProps> = ({
 
     // Start with picking the winner prize
     // Weighted randomization
-    const available = prizes.filter(p => p.inStock > 0);
-    if (available.length === 0) {
+    const winner = selectPrizeSpin(prizes);
+    if (!winner) {
       setErrorMsg('Inventory fully empty! Set more stock in admin controls.');
       return;
-    }
-
-    // Pick winner prize
-    const totalWeight = available.reduce((sum, p) => sum + p.probability, 0);
-    const randomPoint = Math.random() * totalWeight;
-    let runningSum = 0;
-    let winner = available[available.length - 1];
-
-    for (const p of available) {
-      runningSum += p.probability;
-      if (randomPoint <= runningSum) {
-        winner = p;
-        break;
-      }
     }
 
     // Calculate index of winner in current prizes
@@ -265,10 +252,14 @@ export const PrizeWheel: React.FC<PrizeWheelProps> = ({
 
     // Set physical motion variables
     const spins = 6 + Math.floor(Math.random() * 4); // 6 to 10 solid physical turns
-    const startingAngle = angleRef.current % (2 * Math.PI);
+    const startingAngle = ((angleRef.current % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
     angleRef.current = startingAngle; // snap to short domain for linear transitions
     
-    targetAngleRef.current = startingAngle + (spins * 2 * Math.PI) + targetNormalized;
+    let targetEnd = targetNormalized;
+    if (targetEnd < startingAngle) {
+      targetEnd += 2 * Math.PI;
+    }
+    targetAngleRef.current = targetEnd + (spins * 2 * Math.PI);
     
     // Physics parameters
     velocityRef.current = 0.28; // high speed spin velocity
@@ -364,7 +355,7 @@ export const PrizeWheel: React.FC<PrizeWheelProps> = ({
         >
           <span className="text-[14px] font-black tracking-wider leading-none">SPIN</span>
           <span className="text-[9px] font-mono font-bold mt-1 inline-flex items-center text-slate-900/90 gap-0.5">
-            20 <span className="text-amber-950 text-xs text-bold">¢</span>
+            50 <span className="text-amber-950 text-xs text-bold">¢</span>
           </span>
         </button>
       </div>
